@@ -113,3 +113,61 @@ def compute_corrcoef(x, y):
     """Spearman相关系数
     """
     return scipy.stats.spearmanr(x, y).correlation
+
+def get_encoder_ab(
+    config_path,
+    checkpoint_path,
+    model='bert',
+    pooling='first-last-avg',
+    dropout_rate=0.1,
+    dim = 512
+):
+    """建立编码器
+    """
+    assert pooling in ['first-last-avg', 'last-avg', 'cls', 'pooler']
+    if pooling == 'pooler':
+        bert = build_transformer_model(
+            config_path,
+            checkpoint_path,
+            model=model,
+            with_pool='linear',
+            dropout_rate=dropout_rate
+        )
+    else:
+        bert = build_transformer_model(
+            config_path,
+            checkpoint_path,
+            model=model,
+            dropout_rate=dropout_rate
+        )
+    outputs, count = [], 0
+    while True:
+        try:
+            output = bert.get_layer(
+                'Transformer-%d-FeedForward-Norm' % count
+            ).output
+            outputs.append(output)
+            count += 1
+        except:
+            break
+    if pooling == 'first-last-avg':
+        outputs = [
+            keras.layers.GlobalAveragePooling1D()(outputs[0]),
+            keras.layers.GlobalAveragePooling1D()(outputs[-1])
+        ]
+        output = keras.layers.Average()(outputs)
+    elif pooling == 'last-avg':
+        output = keras.layers.GlobalAveragePooling1D()(outputs[-1])
+    elif pooling == 'cls':
+        output = keras.layers.Lambda(lambda x: x[:, 0])(outputs[-1])
+    elif pooling == 'pooler':
+        output = bert.output
+    outputA = keras.layers.Dense(dim,activation='tanh')(output)
+    outputB = keras.layers.Dense(dim,activation='tanh')(output)
+    # outputA = K.l2_normalize(outputA, axis=1)
+    # outputB = K.l2_normalize(outputB, axis=1)
+    # similarities = K.dot(outputA, K.transpose(outputB))
+    # 最后的编码器
+    encoder = Model(bert.inputs, [outputA,outputB])
+    return encoder
+

@@ -17,7 +17,7 @@ assert model_type in [
     'RoBERTa-large', 'NEZHA-large', 'SimBERT', 'SimBERT-tiny', 'SimBERT-small'
 ]
 assert pooling in ['first-last-avg', 'last-avg', 'cls', 'pooler']
-assert task_name in ['ATEC', 'BQ', 'LCQMC', 'PAWSX', 'STS-B']
+assert task_name in ['ATEC', 'BQ', 'LCQMC', 'PAWSX', 'STS-B','allscene']
 dropout_rate = float(dropout_rate)
 
 if task_name == 'PAWSX':
@@ -84,7 +84,7 @@ elif 'NEZHA' in model_type:
         dropout_rate=dropout_rate
     )
 else:
-    encoder = get_encoder(
+    encoder = get_encoder_ab(
         config_path,
         checkpoint_path,
         pooling=pooling,
@@ -129,14 +129,15 @@ def simcse_loss(y_true, y_pred):
     """
     # 构造标签
     idxs = K.arange(0, K.shape(y_pred)[0])
-    idxs_1 = idxs[None, :]
-    idxs_2 = (idxs + 1 - idxs % 2 * 2)[:, None]
-    y_true = K.equal(idxs_1, idxs_2)
+    # idxs_1 = idxs[None, :]
+    # idxs_2 = (idxs + 1 - idxs % 2 * 2)[:, None]
+    y_true = K.equal(idxs, idxs)
     y_true = K.cast(y_true, K.floatx())
     # 计算相似度
-    y_pred = K.l2_normalize(y_pred, axis=1)
-    similarities = K.dot(y_pred, K.transpose(y_pred))
-    similarities = similarities - tf.eye(K.shape(y_pred)[0]) * 1e12
+    outputA, outputB = y_pred
+    outputA = K.l2_normalize(outputA, axis=1)
+    outputB = K.l2_normalize(outputB, axis=1)
+    similarities = K.dot(outputA, K.transpose(outputB))
     similarities = similarities * 20
     loss = K.categorical_crossentropy(y_true, similarities, from_logits=True)
     return K.mean(loss)
@@ -178,5 +179,28 @@ all_corrcoefs.extend([
 for name, corrcoef in zip(all_names + ['avg', 'w-avg'], all_corrcoefs):
     print('%s: %s' % (name, corrcoef))
 
-# encoder.save('tmp.h5')
-# encode1 = keras.models.load_model('tmp.h5',compile = False)
+
+
+import csv
+import random
+path_source = '/search/odin/guobk/data/chn/senteval_cn/allscene/train1.csv'
+S = []
+with open(path_source, 'r') as f:
+    reader = csv.reader(f)
+    print(type(reader))
+    for row in reader:
+        S.append(row)
+
+# path_source = '/search/odin/guobk/data/chn/senteval_cn/allscene/train1.csv'
+# S = []
+# with open(path_source, 'r') as f:
+# 	data = csv.reader((line.replace('\0','') for line in f), delimiter=",")
+# 	for row in data:
+# 		S.append(row)
+# headers = S[0]
+# rows = S[1:]
+# with open(path_source,'w')as f:
+#     f_csv = csv.writer(f)
+#     f_csv.writerow(headers)
+#     f_csv.writerows(rows)
+
