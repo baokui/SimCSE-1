@@ -48,14 +48,14 @@ model_name = {
     'SimBERT-small': 'chinese_simbert_L-6_H-384_A-12'
 }[model_type]
 
-config_path = '/root/kg/bert/%s/bert_config.json' % model_name
+config_path = '/search/odin/guobk/data/model/%s/bert_config.json' % model_name
 if model_type == 'NEZHA':
-    checkpoint_path = '/root/kg/bert/%s/model.ckpt-691689' % model_name
+    checkpoint_path = '/search/odin/guobk/data/model/%s/model.ckpt-691689' % model_name
 elif model_type == 'NEZHA-large':
-    checkpoint_path = '/root/kg/bert/%s/model.ckpt-346400' % model_name
+    checkpoint_path = '/search/odin/guobk/data/model/%s/model.ckpt-346400' % model_name
 else:
-    checkpoint_path = '/root/kg/bert/%s/bert_model.ckpt' % model_name
-dict_path = '/root/kg/bert/%s/vocab.txt' % model_name
+    checkpoint_path = '/search/odin/guobk/data/model/%s/bert_model.ckpt' % model_name
+dict_path = '/search/odin/guobk/data/model/%s/vocab.txt' % model_name
 
 # 建立分词器
 if model_type in ['WoBERT', 'RoFormer']:

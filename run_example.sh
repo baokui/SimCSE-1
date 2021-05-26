@@ -1,0 +1,1 @@
+python eval.py BERT cls ATEC 0.3 >> log/atec.log 2>&1 &
