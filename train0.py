@@ -7,11 +7,17 @@ import tensorflow as tf
 from bert4keras.optimizers import Adam
 from bert4keras.snippets import DataGenerator, sequence_padding
 import jieba
+from keras.layers import Lambda
+import random
+devideLayer = Lambda(lambda inputs: inputs / 2)
+
 jieba.initialize()
 
 # 基本参数
 model_type, pooling, task_name, dropout_rate = sys.argv[1:]
-# model_type, pooling, task_name, dropout_rate = 'BERT cls ATEC 0.3'.split(' ')
+
+dim = 512
+# model_type, pooling, task_name, dropout_rate = 'BERT cls allscene 0.3'.split(' ')
 assert model_type in [
     'BERT', 'RoBERTa', 'NEZHA', 'WoBERT', 'RoFormer', 'BERT-large',
     'RoBERTa-large', 'NEZHA-large', 'SimBERT', 'SimBERT-tiny', 'SimBERT-small'
@@ -88,24 +94,49 @@ else:
         config_path,
         checkpoint_path,
         pooling=pooling,
-        dropout_rate=dropout_rate
+        dropout_rate=dropout_rate,
+        dim=dim
     )
 
 # 语料id化
-all_names, all_weights, all_token_ids, all_labels = [], [], [], []
+# train data
 train_token_ids = []
 for name, data in datasets.items():
-    a_token_ids, b_token_ids, labels = convert_to_ids(data, tokenizer, maxlen)
+    a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
     all_names.append(name)
     all_weights.append(len(data))
     all_token_ids.append((a_token_ids, b_token_ids))
     all_labels.append(labels)
-    train_token_ids.extend(a_token_ids)
-    train_token_ids.extend(b_token_ids)
+    if 'train' in name:
+        for i in range(len(a_token_ids)):
+            train_token_ids.append(a_token_ids[i])
+            train_token_ids.append(b_token_ids[i])
+train_token_ids = np.array(train_token_ids)
+# test data
+all_names, all_weights, all_token_ids, all_labels = [], [], [], []
+for name, data in datasets.items():
+    if 'train' in name:
+        continue
+    a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
+    all_names.append(name)
+    all_weights.append(len(data))
+    a_token_ids = list(a_token_ids)
+    b_token_ids = list(b_token_ids)
+    n = len(a_token_ids)
+    for j in range(n):
+        neg = random.sample(b_token_ids, 5)
+        neg = [t for t in neg if sum(t)!=sum(b_token_ids[j])]
+        a_token_ids.extend([a_token_ids[j]]*len(neg))
+        b_token_ids.extend(neg)
+        labels.extend([0]*len(neg))
+    all_token_ids.append((a_token_ids, b_token_ids))
+    all_labels.append(labels)
 
-if task_name != 'PAWSX':
-    np.random.shuffle(train_token_ids)
-    train_token_ids = train_token_ids[:10000]
+
+
+# if task_name != 'PAWSX':
+#     np.random.shuffle(train_token_ids)
+#     train_token_ids = train_token_ids[:10000]
 
 
 class data_generator(DataGenerator):
@@ -124,63 +155,92 @@ class data_generator(DataGenerator):
                 batch_token_ids = []
 
 
+# def simcse_loss(y_true, y_pred):
+#     """用于SimCSE训练的loss
+#     """
+#     # 构造标签
+#     idxs = K.arange(0, K.shape(y_pred[0])[0]/2)
+#     idxs_1 = idxs[None, :]
+#     idxs_2 = idxs[:, None]
+#     y_true = K.equal(idxs_1, idxs_2)
+#     y_true = K.cast(y_true, K.floatx())
+#     # 计算相似度
+#     outputA, outputB = y_pred
+#     outputA = outputA[::2] #取偶数行，即取A句的featureA
+#     outputB = outputB[1::2] #取奇数行，即取B句的featureB
+#     outputA = K.l2_normalize(outputA, axis=1)
+#     outputB = K.l2_normalize(outputB, axis=1)
+#     similarities = K.dot(outputA, K.transpose(outputB))
+#     similarities = similarities * 20
+#     loss = K.categorical_crossentropy(y_true, similarities, from_logits=True)
+#     return K.mean(loss)
+
 def simcse_loss(y_true, y_pred):
     """用于SimCSE训练的loss
     """
     # 构造标签
-    idxs = K.arange(0, K.shape(y_pred)[0])
-    # idxs_1 = idxs[None, :]
-    # idxs_2 = (idxs + 1 - idxs % 2 * 2)[:, None]
-    y_true = K.equal(idxs, idxs)
+    idxs = K.arange(0, K.shape(y_pred)[0]/2)
+    idxs_1 = idxs[None, :]
+    idxs_2 = idxs[:, None]
+    y_true = K.equal(idxs_1, idxs_2)
     y_true = K.cast(y_true, K.floatx())
     # 计算相似度
-    outputA, outputB = y_pred
+    outputA = Lambda(lambda x: x[:,:dim])(y_pred)
+    outputB = Lambda(lambda x: x[:,dim:])(y_pred)
+    outputA = outputA[::2] #取偶数行，即取A句的featureA
+    outputB = outputB[1::2] #取奇数行，即取B句的featureB
     outputA = K.l2_normalize(outputA, axis=1)
     outputB = K.l2_normalize(outputB, axis=1)
     similarities = K.dot(outputA, K.transpose(outputB))
     similarities = similarities * 20
     loss = K.categorical_crossentropy(y_true, similarities, from_logits=True)
     return K.mean(loss)
-
-
 # SimCSE训练
 encoder.summary()
 encoder.compile(loss=simcse_loss, optimizer=Adam(1e-5))
+
+# test
+test()
+
 train_generator = data_generator(train_token_ids, 64)
 encoder.fit(
     train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=1
 )
 
-# 语料向量化
-all_vecs = []
-for a_token_ids, b_token_ids in all_token_ids:
-    a_vecs = encoder.predict([a_token_ids,
-                              np.zeros_like(a_token_ids)],
-                             verbose=True)
-    b_vecs = encoder.predict([b_token_ids,
-                              np.zeros_like(b_token_ids)],
-                             verbose=True)
-    all_vecs.append((a_vecs, b_vecs))
+def test():
+    # 语料向量化
+    all_vecs = []
+    for i in range(len(all_names)):
+        if 'train' in all_names[i]:
+            continue
+        a_token_ids, b_token_ids = all_token_ids[i]
+        # a_token_ids, b_token_ids = a_token_ids[:100], b_token_ids[:100]
+        a_vecs = encoder.predict([a_token_ids,
+                                np.zeros_like(a_token_ids)],
+                                verbose=True)[:,:dim]
+        b_vecs = encoder.predict([b_token_ids,
+                                np.zeros_like(b_token_ids)],
+                                verbose=True)[:,dim:]
+        all_vecs.append((a_vecs, b_vecs))
+    # 标准化，相似度，相关系数
+    all_corrcoefs = []
+    for (a_vecs, b_vecs), labels in zip(all_vecs, all_labels):
+        # labels = labels[:100]
+        a_vecs = l2_normalize(a_vecs)
+        b_vecs = l2_normalize(b_vecs)
+        sims = (a_vecs * b_vecs).sum(axis=1)
+        corrcoef = compute_corrcoef(labels, sims)
+        all_corrcoefs.append(corrcoef)
 
-# 标准化，相似度，相关系数
-all_corrcoefs = []
-for (a_vecs, b_vecs), labels in zip(all_vecs, all_labels):
-    a_vecs = l2_normalize(a_vecs)
-    b_vecs = l2_normalize(b_vecs)
-    sims = (a_vecs * b_vecs).sum(axis=1)
-    corrcoef = compute_corrcoef(labels, sims)
-    all_corrcoefs.append(corrcoef)
-
-all_corrcoefs.extend([
-    np.average(all_corrcoefs),
-    np.average(all_corrcoefs, weights=all_weights)
-])
-
-for name, corrcoef in zip(all_names + ['avg', 'w-avg'], all_corrcoefs):
-    print('%s: %s' % (name, corrcoef))
+    all_corrcoefs.extend([
+        np.average(all_corrcoefs),
+        np.average(all_corrcoefs, weights=all_weights)
+    ])
+    for name, corrcoef in zip(all_names + ['avg', 'w-avg'], all_corrcoefs):
+        print('%s: %s' % (name, corrcoef))
 
 
-
+'''
 import csv
 import random
 path_source = '/search/odin/guobk/data/chn/senteval_cn/allscene/train1.csv'
@@ -190,6 +250,26 @@ with open(path_source, 'r') as f:
     print(type(reader))
     for row in reader:
         S.append(row)
+S = S[1:]
+S1 = [[s[0].replace('\t',''),s[1].replace('\t','')] for s in S]
+S1 = ['\t'.join(t) for t in S1]
+S1 = list(set(S1))
+random.shuffle(S1)
+Xvalid = S1[:100000]
+Xtest = S1[100000:200000]
+Xtrn = S1[200000:]
+Xtrn = [t+'\t1' for t in Xtrn]
+Xtest = [t+'\t1' for t in Xtest]
+Xvalid = [t+'\t1' for t in Xvalid]
+task_name = 'allscene'
+data_path = '/search/odin/guobk/data/chn/senteval_cn/'
+X = [Xtrn,Xvalid,Xtest]
+f0 = ['train', 'valid', 'test']
+for i in range(3):
+    f = f0[i]
+    filename = '%s%s/%s.%s.data' % (data_path, task_name, task_name, f)
+    with open(filename,'w',encoding='utf-8') as f:
+        f.write('\n'.join(X[i]))
 
 # path_source = '/search/odin/guobk/data/chn/senteval_cn/allscene/train1.csv'
 # S = []
@@ -204,3 +284,4 @@ with open(path_source, 'r') as f:
 #     f_csv.writerow(headers)
 #     f_csv.writerows(rows)
 
+'''

@@ -101,6 +101,20 @@ def convert_to_ids(data, tokenizer, maxlen=64):
     b_token_ids = sequence_padding(b_token_ids)
     return a_token_ids, b_token_ids, labels
 
+def convert_to_ids_ab(data, tokenizer, maxlen=64):
+    """转换文本数据为id形式
+    """
+    a_token_ids, b_token_ids, labels = [], [], []
+    for d in tqdm(data):
+        token_ids = tokenizer.encode(d[0], maxlen=maxlen)[0]
+        a_token_ids.append(token_ids)
+        token_ids = tokenizer.encode(d[1], maxlen=maxlen)[0]
+        b_token_ids.append(token_ids)
+        labels.append(d[2])
+    token_ids = sequence_padding(a_token_ids+b_token_ids)
+    n = int(len(token_ids)/2)
+    a_token_ids,b_token_ids = token_ids[:n],token_ids[n:]
+    return a_token_ids, b_token_ids, labels
 
 def l2_normalize(vecs):
     """标准化
@@ -162,12 +176,13 @@ def get_encoder_ab(
         output = keras.layers.Lambda(lambda x: x[:, 0])(outputs[-1])
     elif pooling == 'pooler':
         output = bert.output
-    outputA = keras.layers.Dense(dim,activation='tanh')(output)
-    outputB = keras.layers.Dense(dim,activation='tanh')(output)
+    # featureA = keras.layers.Dense(dim,activation='tanh')(output)
+    # featureB = keras.layers.Dense(dim,activation='tanh')(output)
     # outputA = K.l2_normalize(outputA, axis=1)
     # outputB = K.l2_normalize(outputB, axis=1)
     # similarities = K.dot(outputA, K.transpose(outputB))
+    feature = keras.layers.Dense(dim*2,activation='tanh')(output)
     # 最后的编码器
-    encoder = Model(bert.inputs, [outputA,outputB])
+    encoder = Model(bert.inputs, feature)
     return encoder
 
