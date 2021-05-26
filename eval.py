@@ -25,7 +25,7 @@ else:
     maxlen = 64
 
 # 加载数据集
-data_path = '/root/senteval_cn/'
+data_path = '/search/odin/guobk/data/chn/senteval_cn/'
 
 datasets = {
     '%s-%s' % (task_name, f):
