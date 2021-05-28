@@ -102,42 +102,23 @@ else:
 # train data
 train_token_ids = []
 for name, data in datasets.items():
-    a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
-    all_names.append(name)
-    all_weights.append(len(data))
-    all_token_ids.append((a_token_ids, b_token_ids))
-    all_labels.append(labels)
     if 'train' in name:
+        a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
         for i in range(len(a_token_ids)):
-            train_token_ids.append(a_token_ids[i])
-            train_token_ids.append(b_token_ids[i])
-train_token_ids = np.array(train_token_ids)
+            train_token_ids.append([a_token_ids[i],b_token_ids[i]])
+# train_token_ids = np.array(train_token_ids)
 # test data
-all_names, all_weights, all_token_ids, all_labels = [], [], [], []
+test_token_ids = []
+valid_token_ids = []
 for name, data in datasets.items():
-    if 'train' in name:
-        continue
-    a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
-    all_names.append(name)
-    all_weights.append(len(data))
-    a_token_ids = list(a_token_ids)
-    b_token_ids = list(b_token_ids)
-    n = len(a_token_ids)
-    for j in range(n):
-        neg = random.sample(b_token_ids, 5)
-        neg = [t for t in neg if sum(t)!=sum(b_token_ids[j])]
-        a_token_ids.extend([a_token_ids[j]]*len(neg))
-        b_token_ids.extend(neg)
-        labels.extend([0]*len(neg))
-    all_token_ids.append((a_token_ids, b_token_ids))
-    all_labels.append(labels)
-
-
-
-# if task_name != 'PAWSX':
-#     np.random.shuffle(train_token_ids)
-#     train_token_ids = train_token_ids[:10000]
-
+    if 'test' in name:
+        a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
+        for i in range(len(a_token_ids)):
+            test_token_ids.append([a_token_ids[i],b_token_ids[i]])
+    elif 'valid' in name:
+        a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
+        for i in range(len(a_token_ids)):
+            valid_token_ids.append([a_token_ids[i],b_token_ids[i]])
 
 class data_generator(DataGenerator):
     """训练语料生成器
@@ -145,8 +126,9 @@ class data_generator(DataGenerator):
     def __iter__(self, random=False):
         batch_token_ids = []
         for is_end, token_ids in self.sample(random):
-            batch_token_ids.append(token_ids)
-            batch_token_ids.append(token_ids)
+            batch_token_ids.append(token_ids[0])
+            batch_token_ids.append(token_ids[1])
+            #batch_token_ids.append(token_ids)
             if len(batch_token_ids) == self.batch_size * 2 or is_end:
                 batch_token_ids = sequence_padding(batch_token_ids)
                 batch_segment_ids = np.zeros_like(batch_token_ids)
@@ -192,53 +174,75 @@ def simcse_loss(y_true, y_pred):
     outputA = K.l2_normalize(outputA, axis=1)
     outputB = K.l2_normalize(outputB, axis=1)
     similarities = K.dot(outputA, K.transpose(outputB))
-    similarities = similarities * 20
+    similarities = similarities * 2
     loss = K.categorical_crossentropy(y_true, similarities, from_logits=True)
     return K.mean(loss)
 # SimCSE训练
+
+
+# test ...............
+encoder.save('/search/odin/guobk/data/simcse/model/model_init.h5')
+demo_test1()
+
+# train ................
+import os
 encoder.summary()
 encoder.compile(loss=simcse_loss, optimizer=Adam(1e-5))
-
-# test
-test()
-
+save_dir = "/search/odin/guobk/data/simcse/model/"
+checkpointer = keras.callbacks.ModelCheckpoint(os.path.join(save_dir, 'model_{epoch:03d}.h5'),
+                                   verbose=1, save_weights_only=False, period=1)
 train_generator = data_generator(train_token_ids, 64)
 encoder.fit(
-    train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=1
+    train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=5,callbacks=[checkpointer]
 )
+encoder.save('/search/odin/guobk/data/simcse/model/model_final.h5')
+demo_test1()
 
-def test():
-    # 语料向量化
-    all_vecs = []
-    for i in range(len(all_names)):
-        if 'train' in all_names[i]:
-            continue
-        a_token_ids, b_token_ids = all_token_ids[i]
-        # a_token_ids, b_token_ids = a_token_ids[:100], b_token_ids[:100]
-        a_vecs = encoder.predict([a_token_ids,
-                                np.zeros_like(a_token_ids)],
-                                verbose=True)[:,:dim]
-        b_vecs = encoder.predict([b_token_ids,
-                                np.zeros_like(b_token_ids)],
-                                verbose=True)[:,dim:]
-        all_vecs.append((a_vecs, b_vecs))
+# encoder = keras.models.load_model('/search/odin/guobk/data/simcse/model/model_trained.h5',compile = False)
+
+def demo_test1():
+    sim_trn, cor_train = test1(train_token_ids)
+    sim_tst, cor_test = test1(test_token_ids)
+    sim_val, cor_valid = test1(valid_token_ids)
+    print('corrcoef of train, test, valid is %0.4f, %0.4f, %0.4f'%(cor_train,cor_test,cor_valid))
+def test1(token_ids,maxNb_pos=100,maxNb_neg=1000):
+    a_token_ids = [t[0] for t in token_ids[:maxNb_pos]]
+    b_token_ids = [t[1] for t in token_ids[:maxNb_pos]]
+    labels = [1]*len(a_token_ids)
+    b_token_ids_neg_cand = random.sample([t[1] for t in train_token_ids],maxNb_neg)
+    a_token_ids_neg = []
+    b_token_ids_neg = []
+    for i in range(len(b_token_ids_neg_cand)):
+        j = 0
+        while sum(b_token_ids[j])==sum(b_token_ids_neg_cand[i]):
+            j+=1
+            if j==len(b_token_ids)-1:
+                j = 0
+        a_token_ids_neg.append(a_token_ids[j])
+        b_token_ids_neg.append(b_token_ids_neg_cand[i])
+        labels.append(0)
+    a_token_ids.extend(a_token_ids_neg)
+    b_token_ids.extend(b_token_ids_neg)
+    a_vecs = encoder.predict([a_token_ids,
+                            np.zeros_like(a_token_ids)],
+                            verbose=True)[:,:dim]
+    b_vecs = encoder.predict([b_token_ids,
+                            np.zeros_like(b_token_ids)],
+                            verbose=True)[:,dim:]
     # 标准化，相似度，相关系数
-    all_corrcoefs = []
-    for (a_vecs, b_vecs), labels in zip(all_vecs, all_labels):
-        # labels = labels[:100]
-        a_vecs = l2_normalize(a_vecs)
-        b_vecs = l2_normalize(b_vecs)
-        sims = (a_vecs * b_vecs).sum(axis=1)
-        corrcoef = compute_corrcoef(labels, sims)
-        all_corrcoefs.append(corrcoef)
+    # labels = labels[:100]
+    a_vecs = l2_normalize(a_vecs)
+    b_vecs = l2_normalize(b_vecs)
+    sims = (a_vecs * b_vecs).sum(axis=1)
+    corrcoef = compute_corrcoef(labels, sims)
+    #print('corrcoef:%0.4f'%corrcoef)
+    return sims, corrcoef
 
-    all_corrcoefs.extend([
-        np.average(all_corrcoefs),
-        np.average(all_corrcoefs, weights=all_weights)
-    ])
-    for name, corrcoef in zip(all_names + ['avg', 'w-avg'], all_corrcoefs):
-        print('%s: %s' % (name, corrcoef))
-
+from sklearn import preprocessing
+def norm(V1):
+    V1 = preprocessing.scale(V1, axis=-1)
+    V1 = V1 / np.sqrt(len(V1[0]))
+    return V1
 
 '''
 import csv
