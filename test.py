@@ -110,8 +110,13 @@ def result_merge():
     for i in range(1000):
         for j in range(len(files)):
             ks = F[j][i].keys()
-            k = [t for t in ks if 'rec_' in t][0]
+            k = [t for t in ks if 'rec_' in t and 'origin' not in t][0]
             Queries[i][k] = F[j][i][k]
     with open('/search/odin/guobk/data/bert_semantic/finetuneData_new_test/Queries-comp.json','w') as f:
         json.dump(Queries[:1000],f,ensure_ascii=False,indent=4)
+# base          :1,3,0,3,4,4,5,3,5,4
+# bert双塔       :1,0,0,4,3,4,5,4,5,4
+# Simcse-unsup  :1,0,0,1,2,1,0,0,4
+# simcse-sup    :1,0,0,0,0,0,3,0,0,1
+# simcse-sup-ab :1,4,3,5,5,5,5,3,5,3
     
