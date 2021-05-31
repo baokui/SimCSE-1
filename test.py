@@ -18,7 +18,7 @@ import numpy as np
 maxRecall = 20
 minSim = 0.0
 modeltag = 'simcse_sup_ab'
-path_model = '/search/odin/guobk/data/simcse/model/model_004.h5'
+path_model = '/search/odin/guobk/data/simcse/model/model_005.h5'
 path_target="/search/odin/guobk/data/bert_semantic/finetuneData_new_test/result-simcse_sup_ab.json"
 with open('/search/odin/guobk/data/bert_semantic/finetuneData_new_test/Docs.json','r') as f:
     Docs = json.load(f)
