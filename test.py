@@ -101,6 +101,7 @@ def result_merge():
     import json
     files = os.listdir('/search/odin/guobk/data/bert_semantic/finetuneData_new_test/')
     files = [os.path.join('/search/odin/guobk/data/bert_semantic/finetuneData_new_test/',f) for f in files if 'result' == f[:6]]
+    files = ['/search/odin/guobk/data/bert_semantic/finetuneData_new_test/result-20210522.json','/search/odin/guobk/data/bert_semantic/finetuneData_new_test/result-simcse_sup_ab.json']
     with open('/search/odin/guobk/data/bert_semantic/finetuneData_new_test/Queries.json','r') as f:
         Queries = json.load(f)
     F = []
