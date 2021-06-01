@@ -1,3 +1,4 @@
+from utils import *
 class data_generator(DataGenerator):
     """训练语料生成器
     """
