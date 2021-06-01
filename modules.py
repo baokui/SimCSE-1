@@ -1,4 +1,5 @@
 from utils import *
+from bert4keras.snippets import DataGenerator, sequence_padding
 class data_generator(DataGenerator):
     """训练语料生成器
     """
@@ -56,11 +57,11 @@ def simcse_loss(y_true, y_pred):
     similarities = similarities * 2
     loss = K.categorical_crossentropy(y_true, similarities, from_logits=True)
     return K.mean(loss)
-def test(token_ids,maxNb_pos=100,maxNb_neg=1000):
+def test(encoder,token_ids,maxNb_pos=100,maxNb_neg=1000):
     a_token_ids = [t[0] for t in token_ids[:maxNb_pos]]
     b_token_ids = [t[1] for t in token_ids[:maxNb_pos]]
     labels = [1]*len(a_token_ids)
-    b_token_ids_neg_cand = random.sample([t[1] for t in train_token_ids],maxNb_neg)
+    b_token_ids_neg_cand = random.sample([t[1] for t in token_ids],maxNb_neg)
     a_token_ids_neg = []
     b_token_ids_neg = []
     for i in range(len(b_token_ids_neg_cand)):
@@ -87,7 +88,7 @@ def test(token_ids,maxNb_pos=100,maxNb_neg=1000):
     sims = (a_vecs * b_vecs).sum(axis=1)
     corrcoef = compute_corrcoef(labels, sims)
     #print('corrcoef:%0.4f'%corrcoef)
-    return sims, corrcoef
+    return a_vecs,b_vecs,sims, corrcoef
 
 from sklearn import preprocessing
 def norm(V1):

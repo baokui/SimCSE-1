@@ -89,7 +89,7 @@ for name, data in datasets.items():
 # SimCSE训练
 # test ...............
 encoder.save('/search/odin/guobk/data/simcse/model/model_init.h5')
-demo_test1()
+demo_test()
 
 # train ................
 import os
@@ -113,11 +113,21 @@ demo_test1()
 
 # encoder = keras.models.load_model('/search/odin/guobk/data/simcse/model/model_trained.h5',compile = False)
 
-def demo_test():
-    sim_trn, cor_train = test(train_token_ids)
-    sim_tst, cor_test = test(test_token_ids)
-    sim_val, cor_valid = test(valid_token_ids)
-    print('corrcoef of train, test, valid is %0.4f, %0.4f, %0.4f'%(cor_train,cor_test,cor_valid))
+path_model0 = '/search/odin/guobk/data/simcse/model_new/model_init.h5'
+path_model1 = '/search/odin/guobk/data/simcse/model/model_005.h5'
+path_model2 = '/search/odin/guobk/data/simcse/model_new/model_002.h5'
+encoder0 = keras.models.load_model(path_model0,compile = False)
+encoder1 = keras.models.load_model(path_model1,compile = False)
+encoder2 = keras.models.load_model(path_model2,compile = False)
+demo_test(encoder0)
+demo_test(encoder1)
+demo_test(encoder2)
+def demo_test(encoder):
+    encoder = keras.models.load_model(encoder,compile = False)
+    #sim_trn, cor_train = test(train_token_ids)
+    a_vecs,b_vecs,sim_tst, cor_test = test(encoder,test_token_ids)
+    a,b,sim_val, cor_valid = test(encoder,valid_token_ids)
+    print('corrcoef of test, valid is %0.4f, %0.4f'%(cor_test,cor_valid))
 
 '''
 import csv
