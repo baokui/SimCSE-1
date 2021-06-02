@@ -10,7 +10,7 @@ import jieba
 from keras.layers import Lambda
 import random
 from keras.utils import multi_gpu_model
-from modules import data_generator,simcse_loss,test
+from modules import data_generator,test
 
 devideLayer = Lambda(lambda inputs: inputs / 2)
 
