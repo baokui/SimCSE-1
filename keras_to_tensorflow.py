@@ -19,6 +19,18 @@ import keras
 from keras import backend as K
 from keras.models import model_from_json, model_from_yaml
 
+from utils import *
+import sys
+import tensorflow as tf
+from bert4keras.optimizers import Adam
+from bert4keras.snippets import DataGenerator, sequence_padding
+import jieba
+from keras.layers import Lambda
+import random
+from keras.utils import multi_gpu_model
+from modules import data_generator,test
+import os
+
 K.set_learning_phase(0)
 FLAGS = flags.FLAGS
 
