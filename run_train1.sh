@@ -1,1 +1,1 @@
-nohup python -u train1.py >> log/train1.log 2>&1 &
+nohup python -u train1.py 4 0 >> log/train1.log 2>&1 &

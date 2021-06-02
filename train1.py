@@ -11,6 +11,13 @@ from keras.layers import Lambda
 import random
 from keras.utils import multi_gpu_model
 from modules import data_generator,test
+import os
+
+gpus = int(sys.argv[1])
+modelInit = sys.argv[2]=='1'
+data_path = '/search/odin/guobk/data/chn/senteval_cn/'
+save_dir = "/search/odin/guobk/data/simcse/model_new/"
+path_model_init = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
 
 devideLayer = Lambda(lambda inputs: inputs / 2)
 
@@ -27,11 +34,10 @@ assert model_type in [
 ]
 assert pooling in ['first-last-avg', 'last-avg', 'cls', 'pooler']
 assert task_name in ['ATEC', 'BQ', 'LCQMC', 'PAWSX', 'STS-B','allscene']
-path_model_init = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
+
 dropout_rate = float(dropout_rate)
 maxlen = 64
 # 加载数据集
-data_path = '/search/odin/guobk/data/chn/senteval_cn/'
 datasets = {
     '%s-%s' % (task_name, f):
     load_data('%s%s/%s.%s.data' % (data_path, task_name, task_name, f))
@@ -73,13 +79,16 @@ encoder = get_encoder_ab(
 
 # 语料id化
 # train data
-train_token_ids = []
-for name, data in datasets.items():
-    if 'train' in name:
-        a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
-        for i in range(len(a_token_ids)):
-            train_token_ids.append([a_token_ids[i],b_token_ids[i]])
+train_data = '%s%s/%s.%s.data.npy' % (data_path, task_name, task_name, 'train')
+# train_token_ids = []
+# for name, data in datasets.items():
+#     if 'train' in name:
+#         a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
+#         for i in range(len(a_token_ids)):
+#             train_token_ids.append([a_token_ids[i],b_token_ids[i]])
 # train_token_ids = np.array(train_token_ids)
+# np.save(train_data,train_token_ids)
+train_token_ids = np.load(train_data)
 # test data
 test_token_ids = []
 valid_token_ids = []
@@ -120,12 +129,10 @@ def simcse_loss(y_true, y_pred):
 # demo_test()
 
 # train ................
-import os
-gpus = 8
 encoder.summary()
-encoder = keras.models.load_model(path_model_init,compile = False)
+if modelInit:
+    encoder = keras.models.load_model(path_model_init,compile = False)
 encoder.compile(loss=simcse_loss, optimizer=Adam(1e-5))
-save_dir = "/search/odin/guobk/data/simcse/model_new/"
 checkpointer = keras.callbacks.ModelCheckpoint(os.path.join(save_dir, 'model_{epoch:03d}.h5'),
                                    verbose=1, save_weights_only=False, period=1)
 train_generator = data_generator(train_token_ids, 64*gpus)
@@ -137,7 +144,7 @@ parallel_encoder.compile(loss=simcse_loss,
 parallel_encoder.fit(
     train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=5,callbacks=[checkpointer]
 )
-encoder.save('/search/odin/guobk/data/simcse/model_new/model_final.h5')
+encoder.save(os.path.join(save_dir,'model_final.h5'))
 demo_test1()
 
 # encoder = keras.models.load_model('/search/odin/guobk/data/simcse/model/model_trained.h5',compile = False)
