@@ -1,5 +1,9 @@
 from utils import *
+import tensorflow as tf
+from bert4keras.optimizers import Adam
 from bert4keras.snippets import DataGenerator, sequence_padding
+import jieba
+from keras.layers import Lambda
 class data_generator(DataGenerator):
     """训练语料生成器
     """
