@@ -184,5 +184,5 @@ def get_encoder_ab(
     feature = keras.layers.Dense(dim*2,activation='tanh')(output)
     # 最后的编码器
     encoder = Model(bert.inputs, feature)
-    return encoder
+    return encoder,bert
 

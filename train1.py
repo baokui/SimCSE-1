@@ -69,14 +69,17 @@ dict_path = '/search/odin/guobk/data/model/%s/vocab.txt' % model_name
 # 建立分词器
 tokenizer = get_tokenizer(dict_path)
 # 建立模型
-encoder = get_encoder_ab(
+encoder0 = get_encoder_ab(
         config_path,
         checkpoint_path,
         pooling=pooling,
         dropout_rate=dropout_rate,
         dim=dim
     )
-
+if len(encoder0)==2:
+    encoder,bert = encoder0
+else:
+    encoder = encoder0
 # 语料id化
 # train data
 train_data = '%s%s/%s.%s.data.npy' % (data_path, task_name, task_name, 'train')
