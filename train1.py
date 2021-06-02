@@ -15,6 +15,9 @@ import os
 
 gpus = int(sys.argv[1])
 modelInit = sys.argv[2]=='1'
+# 基本参数
+model_type, pooling, task_name, dropout_rate = sys.argv[3:]
+
 data_path = '/search/odin/guobk/data/chn/senteval_cn/'
 save_dir = "/search/odin/guobk/data/simcse/model_new/"
 path_model_init = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
@@ -23,11 +26,8 @@ devideLayer = Lambda(lambda inputs: inputs / 2)
 
 jieba.initialize()
 
-# 基本参数
-# model_type, pooling, task_name, dropout_rate = sys.argv[1:]
-
 dim = 512
-model_type, pooling, task_name, dropout_rate = 'BERT cls allscene 0.3'.split(' ')
+# model_type, pooling, task_name, dropout_rate = 'BERT cls allscene 0.3'.split(' ')
 assert model_type in [
     'BERT', 'RoBERTa', 'NEZHA', 'WoBERT', 'RoFormer', 'BERT-large',
     'RoBERTa-large', 'NEZHA-large', 'SimBERT', 'SimBERT-tiny', 'SimBERT-small'
@@ -153,7 +153,7 @@ def demo_test(encoder):
     a_vecs,b_vecs,sim_tst, cor_test = test(encoder,test_token_ids)
     a,b,sim_val, cor_valid = test(encoder,valid_token_ids)
     print('corrcoef of test, valid is %0.4f, %0.4f'%(cor_test,cor_valid))
-    
+
 path_model0 = '/search/odin/guobk/data/simcse/model_new/init/model_init.h5'
 path_model1 = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
 path_model2 = '/search/odin/guobk/data/simcse/model_new/model_final.h5'
