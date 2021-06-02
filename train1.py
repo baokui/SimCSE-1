@@ -93,6 +93,27 @@ for name, data in datasets.items():
         for i in range(len(a_token_ids)):
             valid_token_ids.append([a_token_ids[i],b_token_ids[i]])
 
+
+def simcse_loss(y_true, y_pred):
+    """用于SimCSE训练的loss
+    """
+    # 构造标签
+    idxs = K.arange(0, K.shape(y_pred)[0]/2)
+    idxs_1 = idxs[None, :]
+    idxs_2 = idxs[:, None]
+    y_true = K.equal(idxs_1, idxs_2)
+    y_true = K.cast(y_true, K.floatx())
+    # 计算相似度
+    outputA = Lambda(lambda x: x[:,:dim])(y_pred)
+    outputB = Lambda(lambda x: x[:,dim:])(y_pred)
+    outputA = outputA[::2] #取偶数行，即取A句的featureA
+    outputB = outputB[1::2] #取奇数行，即取B句的featureB
+    outputA = K.l2_normalize(outputA, axis=1)
+    outputB = K.l2_normalize(outputB, axis=1)
+    similarities = K.dot(outputA, K.transpose(outputB))
+    similarities = similarities * 2
+    loss = K.categorical_crossentropy(y_true, similarities, from_logits=True)
+    return K.mean(loss)
 # SimCSE训练
 # test ...............
 # encoder.save('/search/odin/guobk/data/simcse/model/model_init.h5')
