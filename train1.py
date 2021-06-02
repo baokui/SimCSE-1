@@ -145,10 +145,15 @@ parallel_encoder.fit(
     train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=5,callbacks=[checkpointer]
 )
 encoder.save(os.path.join(save_dir,'model_final.h5'))
-demo_test1()
 
 # encoder = keras.models.load_model('/search/odin/guobk/data/simcse/model/model_trained.h5',compile = False)
-
+def demo_test(encoder):
+    encoder = keras.models.load_model(encoder,compile = False)
+    #sim_trn, cor_train = test(train_token_ids)
+    a_vecs,b_vecs,sim_tst, cor_test = test(encoder,test_token_ids)
+    a,b,sim_val, cor_valid = test(encoder,valid_token_ids)
+    print('corrcoef of test, valid is %0.4f, %0.4f'%(cor_test,cor_valid))
+    
 path_model0 = '/search/odin/guobk/data/simcse/model_new/init/model_init.h5'
 path_model1 = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
 path_model2 = '/search/odin/guobk/data/simcse/model_new/model_final.h5'
@@ -158,12 +163,7 @@ encoder2 = keras.models.load_model(path_model2,compile = False)
 demo_test(encoder0)
 demo_test(encoder1)
 demo_test(encoder2)
-def demo_test(encoder):
-    encoder = keras.models.load_model(encoder,compile = False)
-    #sim_trn, cor_train = test(train_token_ids)
-    a_vecs,b_vecs,sim_tst, cor_test = test(encoder,test_token_ids)
-    a,b,sim_val, cor_valid = test(encoder,valid_token_ids)
-    print('corrcoef of test, valid is %0.4f, %0.4f'%(cor_test,cor_valid))
+
 
 '''
 import csv
