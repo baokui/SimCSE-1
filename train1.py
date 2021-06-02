@@ -27,6 +27,7 @@ assert model_type in [
 ]
 assert pooling in ['first-last-avg', 'last-avg', 'cls', 'pooler']
 assert task_name in ['ATEC', 'BQ', 'LCQMC', 'PAWSX', 'STS-B','allscene']
+path_model_init = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
 dropout_rate = float(dropout_rate)
 maxlen = 64
 # 加载数据集
@@ -36,6 +37,12 @@ datasets = {
     load_data('%s%s/%s.%s.data' % (data_path, task_name, task_name, f))
     for f in ['train', 'valid', 'test']
 }
+key = '%s-%s' % (task_name, 'train')
+print('train data origin..')
+print(datasets[key][:10])
+random.shuffle(datasets[key])
+print('train data random...')
+print(datasets[key][:10])
 # bert配置
 model_name = {
     'BERT': 'chinese_L-12_H-768_A-12',
@@ -88,15 +95,16 @@ for name, data in datasets.items():
 
 # SimCSE训练
 # test ...............
-encoder.save('/search/odin/guobk/data/simcse/model/model_init.h5')
-demo_test()
+# encoder.save('/search/odin/guobk/data/simcse/model/model_init.h5')
+# demo_test()
 
 # train ................
 import os
 gpus = 8
 encoder.summary()
+encoder = keras.models.load_model(path_model_init,compile = False)
 encoder.compile(loss=simcse_loss, optimizer=Adam(1e-5))
-save_dir = "/search/odin/guobk/data/simcse/model/"
+save_dir = "/search/odin/guobk/data/simcse/model_new/"
 checkpointer = keras.callbacks.ModelCheckpoint(os.path.join(save_dir, 'model_{epoch:03d}.h5'),
                                    verbose=1, save_weights_only=False, period=1)
 train_generator = data_generator(train_token_ids, 64*gpus)
@@ -108,14 +116,14 @@ parallel_encoder.compile(loss=simcse_loss,
 parallel_encoder.fit(
     train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=5,callbacks=[checkpointer]
 )
-encoder.save('/search/odin/guobk/data/simcse/model/model_final.h5')
+encoder.save('/search/odin/guobk/data/simcse/model_new/model_final.h5')
 demo_test1()
 
 # encoder = keras.models.load_model('/search/odin/guobk/data/simcse/model/model_trained.h5',compile = False)
 
-path_model0 = '/search/odin/guobk/data/simcse/model_new/model_init.h5'
-path_model1 = '/search/odin/guobk/data/simcse/model/model_005.h5'
-path_model2 = '/search/odin/guobk/data/simcse/model_new/model_002.h5'
+path_model0 = '/search/odin/guobk/data/simcse/model_new/init/model_init.h5'
+path_model1 = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
+path_model2 = '/search/odin/guobk/data/simcse/model_new/model_final.h5'
 encoder0 = keras.models.load_model(path_model0,compile = False)
 encoder1 = keras.models.load_model(path_model1,compile = False)
 encoder2 = keras.models.load_model(path_model2,compile = False)
