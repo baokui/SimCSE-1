@@ -20,24 +20,7 @@ class data_generator(DataGenerator):
                 yield [batch_token_ids, batch_segment_ids], batch_labels
                 batch_token_ids = []
 
-def test(encoder,token_ids,maxNb_pos=100,maxNb_neg=1000):
-    a_token_ids = [t[0] for t in token_ids[:maxNb_pos]]
-    b_token_ids = [t[1] for t in token_ids[:maxNb_pos]]
-    labels = [1]*len(a_token_ids)
-    b_token_ids_neg_cand = random.sample([t[1] for t in token_ids],maxNb_neg)
-    a_token_ids_neg = []
-    b_token_ids_neg = []
-    for i in range(len(b_token_ids_neg_cand)):
-        j = 0
-        while sum(b_token_ids[j])==sum(b_token_ids_neg_cand[i]):
-            j+=1
-            if j==len(b_token_ids)-1:
-                j = 0
-        a_token_ids_neg.append(a_token_ids[j])
-        b_token_ids_neg.append(b_token_ids_neg_cand[i])
-        labels.append(0)
-    a_token_ids.extend(a_token_ids_neg)
-    b_token_ids.extend(b_token_ids_neg)
+def test(encoder,a_token_ids,b_token_ids,labels):
     a_vecs = encoder.predict([a_token_ids,
                             np.zeros_like(a_token_ids)],
                             verbose=True)[:,:dim]
