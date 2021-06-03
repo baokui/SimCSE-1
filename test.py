@@ -66,15 +66,14 @@ for name, data in datasets.items():
         for i in range(len(a_token_ids)):
             valid_token_ids.append([a_token_ids[i],b_token_ids[i]])
 
-
+a_token_ids_tst,b_token_ids_tst,labels_tst = sampleGenerator(test_token_ids)
+a_token_ids_val,b_token_ids_val,labels_val = sampleGenerator(valid_token_ids)
 path_model0 = '/search/odin/guobk/data/simcse/model_new/init/model_init.h5'
 path_model1 = '/search/odin/guobk/data/simcse/model_new/model_final.h5'
 path_model2 = '/search/odin/guobk/data/simcse/model_roberta/model_final.h5'
 encoder0 = keras.models.load_model(path_model0,compile = False)
 encoder1 = keras.models.load_model(path_model1,compile = False)
 encoder2 = keras.models.load_model(path_model2,compile = False)
-a_token_ids_tst,b_token_ids_tst,labels_tst = sampleGenerator(test_token_ids)
-a_token_ids_val,b_token_ids_val,labels_val = sampleGenerator(valid_token_ids)
 
 print('init model')
 demo_test(encoder0,a_token_ids_tst,b_token_ids_tst,labels_tst,mode='test')
