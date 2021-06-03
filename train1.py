@@ -92,19 +92,6 @@ train_data = '%s%s/%s.%s.data.npy' % (data_path, task_name, task_name, 'train')
 # train_token_ids = np.array(train_token_ids)
 # np.save(train_data,train_token_ids)
 train_token_ids = np.load(train_data)
-# test data
-test_token_ids = []
-valid_token_ids = []
-for name, data in datasets.items():
-    if 'test' in name:
-        a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
-        for i in range(len(a_token_ids)):
-            test_token_ids.append([a_token_ids[i],b_token_ids[i]])
-    elif 'valid' in name:
-        a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
-        for i in range(len(a_token_ids)):
-            valid_token_ids.append([a_token_ids[i],b_token_ids[i]])
-
 
 def simcse_loss(y_true, y_pred):
     """用于SimCSE训练的loss

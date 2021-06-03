@@ -20,7 +20,7 @@ class data_generator(DataGenerator):
                 yield [batch_token_ids, batch_segment_ids], batch_labels
                 batch_token_ids = []
 
-def test(encoder,a_token_ids,b_token_ids,labels):
+def test(encoder,a_token_ids,b_token_ids,labels,dim):
     a_vecs = encoder.predict([a_token_ids,
                             np.zeros_like(a_token_ids)],
                             verbose=True)[:,:dim]
