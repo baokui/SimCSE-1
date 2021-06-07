@@ -82,7 +82,7 @@ else:
     encoder = encoder0
 # 语料id化
 # train data
-train_data = '%s%s/%s.%s-{}.data.npy' % (data_path, task_name, task_name, 'train',epochs)
+train_data = '%s%s/%s.%s-%s.data.npy' % (data_path, task_name, task_name, 'train',epochs)
 # train_token_ids = []
 # for name, data in datasets.items():
 #     if 'train' in name:
