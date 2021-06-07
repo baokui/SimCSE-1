@@ -41,14 +41,14 @@ maxlen = 64
 datasets = {
     '%s-%s' % (task_name, f):
     load_data('%s%s/%s.%s.data' % (data_path, task_name, task_name, f))
-    for f in ['train', 'valid', 'test']
+    for f in ['valid', 'test']
 }
-key = '%s-%s' % (task_name, 'train')
-print('train data origin..')
-print(datasets[key][:10])
-random.shuffle(datasets[key])
-print('train data random...')
-print(datasets[key][:10])
+# key = '%s-%s' % (task_name, 'train')
+# print('train data origin..')
+# print(datasets[key][:10])
+# random.shuffle(datasets[key])
+# print('train data random...')
+# print(datasets[key][:10])
 # bert配置
 model_name = {
     'BERT': 'chinese_L-12_H-768_A-12',
