@@ -16,10 +16,10 @@ import os
 gpus = int(sys.argv[1])
 modelInit = sys.argv[2]=='1'
 # 基本参数
-model_type, pooling, task_name, dropout_rate = sys.argv[3:]
+model_type, pooling, task_name, dropout_rate,batch_size = sys.argv[3:]
 
 data_path = '/search/odin/guobk/data/chn/senteval_cn/'
-save_dir = "/search/odin/guobk/data/simcse/model_{}_{}/".format(model_type,pooling)
+save_dir = "/search/odin/guobk/data/simcse/model_{}_{}-batch{}/".format(model_type,pooling,batch_size)
 path_model_init = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
 
 devideLayer = Lambda(lambda inputs: inputs / 2)
@@ -36,6 +36,7 @@ assert pooling in ['first-last-avg', 'last-avg', 'cls', 'pooler']
 assert task_name in ['ATEC', 'BQ', 'LCQMC', 'PAWSX', 'STS-B','allscene']
 
 dropout_rate = float(dropout_rate)
+batch_size = int(batch_size)
 maxlen = 64
 # 加载数据集
 datasets = {
@@ -125,7 +126,7 @@ if modelInit:
 encoder.compile(loss=simcse_loss, optimizer=Adam(1e-5))
 checkpointer = keras.callbacks.ModelCheckpoint(os.path.join(save_dir, 'model_{epoch:03d}.h5'),
                                    verbose=1, save_weights_only=False, period=1)
-train_generator = data_generator(train_token_ids, 64*gpus)
+train_generator = data_generator(train_token_ids, batch_size*gpus)
 
 parallel_encoder = multi_gpu_model(encoder, gpus=gpus)
 parallel_encoder.compile(loss=simcse_loss,

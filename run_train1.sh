@@ -42,7 +42,27 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 gpus=4
 model=BERT
 pooler=cls
-epochs=epoch5
+epochs=epoch3
 savepath=/search/odin/guobk/data/simcse/model_${model}_$pooler-${epochs}/
 mkdir $savepath
 nohup python -u train2.py $gpus 0 $model $pooler allscene 0.3 $epochs >> log/train1-$model-$pooler-$epochs.log 2>&1 &
+
+
+export CUDA_VISIBLE_DEVICES=4,5,6,7
+gpus=4
+model=SimBERT
+pooler=cls
+epochs=epoch3
+savepath=/search/odin/guobk/data/simcse/model_${model}_$pooler-${epochs}/
+mkdir $savepath
+nohup python -u train2.py $gpus 0 $model $pooler allscene 0.3 $epochs >> log/train1-$model-$pooler-$epochs.log 2>&1 &
+
+
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+gpus=4
+model=BERT
+pooler=cls
+batch_size=256
+savepath=/search/odin/guobk/data/simcse/model_${model}_$pooler-batch$batch_size/
+mkdir $savepath
+nohup python -u train1.py $gpus 0 $model $pooler allscene 0.3 $batch_size >> log/train1-$model-$pooler-batch$batch_size.log 2>&1 &
