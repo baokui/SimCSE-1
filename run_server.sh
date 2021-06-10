@@ -1,0 +1,1 @@
+python -u server.py 4004 >> log/server-4004.log 2>&1 &
