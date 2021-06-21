@@ -87,7 +87,7 @@ if 'npy' in path_train:
     train_token_ids = np.load(path_train)
 else:
     trainData = load_data(path_train)
-    a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
+    a_token_ids, b_token_ids, labels = convert_to_ids_ab(trainData, tokenizer, maxlen)
     for i in range(len(a_token_ids)):
         train_token_ids.append([a_token_ids[i],b_token_ids[i]])
     train_token_ids = np.array(train_token_ids)
