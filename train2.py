@@ -16,10 +16,10 @@ import os
 gpus = int(sys.argv[1])
 modelInit = sys.argv[2]=='1'
 # 基本参数
-model_type, pooling, task_name, dropout_rate, epochs,batch_size = sys.argv[3:]
+model_type, pooling, task_name, dropout_rate, epochs,batch_size,path_train,config_path,save_dir = sys.argv[3:]
 
 data_path = '/search/odin/guobk/data/chn/senteval_cn/'
-save_dir = "/search/odin/guobk/data/simcse/model_{}_{}-{}-batch{}/".format(model_type,pooling,epochs,batch_size)
+# save_dir = "/search/odin/guobk/data/simcse/model_{}_{}-{}-batch{}/".format(model_type,pooling,epochs,batch_size)
 path_model_init = '/search/odin/guobk/data/simcse/model_new/init/model_002.h5'
 
 devideLayer = Lambda(lambda inputs: inputs / 2)
@@ -39,11 +39,11 @@ dropout_rate = float(dropout_rate)
 batch_size = int(batch_size)
 maxlen = 64
 # 加载数据集
-datasets = {
-    '%s-%s' % (task_name, f):
-    load_data('%s%s/%s.%s.data' % (data_path, task_name, task_name, f))
-    for f in ['valid', 'test']
-}
+# datasets = {
+#     '%s-%s' % (task_name, f):
+#     load_data('%s%s/%s.%s.data' % (data_path, task_name, task_name, f))
+#     for f in ['valid', 'test']
+# }
 # key = '%s-%s' % (task_name, 'train')
 # print('train data origin..')
 # print(datasets[key][:10])
@@ -64,7 +64,7 @@ model_name = {
     'SimBERT-tiny': 'chinese_simbert_L-4_H-312_A-12',
     'SimBERT-small': 'chinese_simbert_L-6_H-384_A-12'
 }[model_type]
-config_path = '/search/odin/guobk/data/model/%s/bert_config.json' % model_name
+# config_path = '/search/odin/guobk/data/model/%s/bert_config.json' % model_name
 checkpoint_path = '/search/odin/guobk/data/model/%s/bert_model.ckpt' % model_name
 dict_path = '/search/odin/guobk/data/model/%s/vocab.txt' % model_name
 # 建立分词器
@@ -83,7 +83,15 @@ else:
     encoder = encoder0
 # 语料id化
 # train data
-train_data = '%s%s/%s.%s-%s.data.npy' % (data_path, task_name, task_name, 'train',epochs)
+if 'npy' in path_train:
+    train_token_ids = np.load(path_train)
+else:
+    trainData = load_data(path_train)
+    a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
+    for i in range(len(a_token_ids)):
+        train_token_ids.append([a_token_ids[i],b_token_ids[i]])
+    train_token_ids = np.array(train_token_ids)
+    np.save(path_train.replace('txt','npy'),train_token_ids)
 # train_token_ids = []
 # for name, data in datasets.items():
 #     if 'train' in name:
@@ -92,8 +100,6 @@ train_data = '%s%s/%s.%s-%s.data.npy' % (data_path, task_name, task_name, 'train
 #             train_token_ids.append([a_token_ids[i],b_token_ids[i]])
 # train_token_ids = np.array(train_token_ids)
 # np.save(train_data,train_token_ids)
-train_token_ids = np.load(train_data)
-
 def simcse_loss(y_true, y_pred):
     """用于SimCSE训练的loss
     """

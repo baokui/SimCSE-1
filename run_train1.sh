@@ -64,6 +64,7 @@ model=BERT
 pooler=cls
 epochs=epoch3
 batch_size=128
-savepath=/search/odin/guobk/data/simcse/model_${model}_$pooler-$epochs-batch$batch_size/
-mkdir $savepath
-nohup python -u train2.py $gpus 0 $model $pooler allscene 0.3  $epochs $batch_size >> log/train1-$model-$pooler-$epochs-batch$batch_size.log 2>&1 &
+path_train=/search/odin/guobk/data/simcse/20210621/train.txt
+config_path=/search/odin/guobk/data/simcse/model_simple/bert_config.json
+save_dir=/search/odin/guobk/data/simcse/model_simple
+nohup python -u train2.py $gpus 0 $model $pooler allscene 0.3  $epochs $batch_size $config_path $save_dir >> log/train1-$model-$pooler-$epochs-batch$batch_size.log 2>&1 &
