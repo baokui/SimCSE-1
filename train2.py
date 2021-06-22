@@ -16,7 +16,8 @@ import os
 gpus = int(sys.argv[1])
 modelInit = sys.argv[2]=='1'
 # 基本参数
-model_type, pooling, task_name, dropout_rate, epochs,batch_size,path_train,config_path,save_dir = sys.argv[3:]
+model_type, pooling, task_name, dropout_rate, epochs,batch_size,path_train,config_path,save_dir,nb_epochs = sys.argv[3:]
+nb_epochs = int(nb_epochs)
 
 data_path = '/search/odin/guobk/data/chn/senteval_cn/'
 # save_dir = "/search/odin/guobk/data/simcse/model_{}_{}-{}-batch{}/".format(model_type,pooling,epochs,batch_size)
@@ -140,7 +141,7 @@ parallel_encoder.compile(loss=simcse_loss,
                        optimizer=Adam(1e-5))
 encoder.save(os.path.join(save_dir,'model_init.h5'))
 parallel_encoder.fit(
-    train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=1,callbacks=[checkpointer]
+    train_generator.forfit(), steps_per_epoch=len(train_generator), epochs=nb_epochs,callbacks=[checkpointer]
 )
 encoder.save(os.path.join(save_dir,'model_final.h5'))
 
