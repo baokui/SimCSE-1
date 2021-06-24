@@ -42,7 +42,7 @@ with open(path_docs,'r') as f:
 with open(path_queries,'r') as f:
     Queries = json.load(f)
 D = [Docs[i]['content'] for i in range(len(Docs))]
-Q = [Queries[i]['content'].replace('*','') for i in range(len(Queries))]
+Q = [Queries[i]['input'].replace('*','') for i in range(len(Queries))]
 Q1 = Q + ['我们']*(len(D)-len(Q))
 data = [(Q1[i],D[i],0) for i in range(len(D))]
 a_token_ids, b_token_ids, labels = convert_to_ids_ab(data, tokenizer, maxlen)
