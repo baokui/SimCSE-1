@@ -185,4 +185,3 @@ def get_encoder_ab(
     # 最后的编码器
     encoder = Model(bert.inputs, feature)
     return encoder,bert
-

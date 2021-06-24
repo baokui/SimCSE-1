@@ -41,3 +41,63 @@ def norm(V1):
     V1 = preprocessing.scale(V1, axis=-1)
     V1 = V1 / np.sqrt(len(V1[0]))
     return V1
+
+def getfiles(rootpath):
+    datas = []
+    def eachFile(filepath):
+        if os.path.isfile(filepath):  # 如果是文件
+            if 'part-' in filepath:
+                datas.append(filepath)
+                return
+        fileNames = os.listdir(filepath)  # 获取当前路径下的文件名，返回List
+        for file in fileNames:
+            newDir = filepath + '/' + file  # 将文件命加入到当前文件路径后面
+            # print(newDir)
+            # if os.path.isdir(newDir): # 如果是文件夹
+            if os.path.isfile(newDir):  # 如果是文件
+                if 'part-' in newDir:
+                    datas.append(newDir)
+            else:
+                eachFile(newDir)  # 如果不是文件，递归这个文件夹的路径
+    eachFile(rootpath)
+    return datas
+def readData1(files,adtypes,minlen=5):
+    S = []
+    for file in files:
+        with open(file,'r') as f:
+            s = f.read().strip().split('\n')
+            s = [t.split('\t') for t in s]
+            s = [t for t in s if t[2]!='-1' and len(t[1].strip())>=minlen and t[4][:4] in adtypes]
+            S.extend(s)
+        print(file,len(S))
+    #S = [t.split('\t') for t in S]
+    return S
+def getDocs():
+    import pymysql
+    conn = pymysql.connect(
+        host='mt.tugele.rds.sogou',
+        user='tugele_new',
+        password='tUgele2017OOT',
+        charset='utf8',
+        port=3306,
+        # autocommit=True,    # 如果插入数据，， 是否自动提交? 和conn.commit()功能一致。
+    )
+    # ****python, 必须有一个游标对象， 用来给数据库发送sql语句， 并执行的.
+    # 2. 创建游标对象，
+    cur = conn.cursor()
+    # 4). **************************数据库查询*****************************
+    # sqli = 'SELECT * FROM tugele.ns_flx_wisdom_words_new'
+    sqli = 'SELECT a.id,a.content,a.isDeleted FROM (tugele.ns_flx_wisdom_words_new a) where a.status=1 and a.isDeleted=0'
+    cur.execute('SET NAMES utf8mb4')
+    cur.execute("SET CHARACTER SET utf8mb4")
+    cur.execute("SET character_set_connection=utf8mb4")
+    result = cur.execute(sqli)  # 默认不返回查询结果集， 返回数据记录数。
+    info = cur.fetchall()  # 3). 获取所有的查询结果
+    # print(info)
+    # print(len(info))
+    # 4. 关闭游标
+    cur.close()
+    # 5. 关闭连接
+    conn.close()
+    S = {str(info[i][0]):info[i][1] for i in range(len(info))}
+    return S
