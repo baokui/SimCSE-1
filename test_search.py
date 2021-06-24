@@ -26,7 +26,7 @@ path_models = sys.argv[2].split(',')
 path_docs = sys.argv[3]
 path_queries = sys.argv[4]
 path_target = sys.argv[5]
-
+maxQ = int(sys.argv[6])
 dim = 512
 maxlen = 64
 maxRec = 10
@@ -40,7 +40,7 @@ tokenizer = get_tokenizer(dict_path)
 with open(path_docs,'r') as f:
     Docs = json.load(f)
 with open(path_queries,'r') as f:
-    Queries = json.load(f)
+    Queries = json.load(f)[:maxQ]
 D = [Docs[i]['content'] for i in range(len(Docs))]
 Q = [Queries[i]['input'].replace('*','') for i in range(len(Queries))]
 Q1 = Q + ['我们']*(len(D)-len(Q))
