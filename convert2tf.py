@@ -16,7 +16,7 @@ from tensorflow.python.platform import gfile
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 dim = 512
-path_export_model,version = '/search/odin/guobk/data/simcse/model_simple/pbmodel/','0'
+path_export_model,version = '/search/odin/guobk/data/simcse/model_simple/pbmodel/','1'
 data_path = '/search/odin/guobk/data/chn/senteval_cn/'
 task_name = 'allscene'
 train_data = '%s%s/%s.%s.data.npy' % (data_path, task_name, task_name, 'train')
@@ -54,7 +54,8 @@ inputs = [inputToken,inputSegment]
 # 保存为pb文件
 sess.run(tf.global_variables_initializer())
 builder = tf.saved_model.builder.SavedModelBuilder(path_export_model + "/" + version)
-y = pred
+# y = pred
+y,_ = tf.split(pred,2, axis=-1)
 #y = graph.get_tensor_by_name("Transformer-6-FeedForward-Norm/add_1:0")
 signature = tf.saved_model.signature_def_utils.predict_signature_def(inputs={'feat_index': inputToken,'feat_index1':inputSegment},
                                                                      outputs={'scores': y})
@@ -104,10 +105,10 @@ a_tokens = [int(t) for t in x0]
 b_tokens = [int(t) for t in x1]
 feed_dict = {'instances': [{'feat_index': a_tokens, 'feat_index1': [0]*len(x0)}]}
 r = requests.post(url,json=feed_dict)
-a_vecs1 = r.json()['predictions'][0][:dim]
+a_vecs1 = r.json()['predictions'][0]
 feed_dict = {'instances': [{'feat_index': b_tokens, 'feat_index1': [0]*len(x1)}]}
 r = requests.post(url,json=feed_dict)
-b_vecs1 = r.json()['predictions'][0][dim:]
+b_vecs1 = r.json()['predictions'][0]
 
 mse_a = np.mean([(a_vecs[i]-a_vecs1[i])**2 for i in range(len(a_vecs))])
 mse_b = np.mean([(b_vecs[i]-b_vecs1[i])**2 for i in range(len(b_vecs))])

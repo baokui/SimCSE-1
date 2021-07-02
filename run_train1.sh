@@ -69,3 +69,18 @@ config_path=/search/odin/guobk/data/simcse/model_simple/bert_config.json
 save_dir=/search/odin/guobk/data/simcse/model_simple
 nb_epochs=5
 nohup python -u train2.py $gpus 0 $model $pooler allscene 0.3  $epochs $batch_size $path_train $config_path $save_dir $nb_epochs >> log/train1-simple.log 2>&1 &
+
+########
+#l4
+export CUDA_VISIBLE_DEVICES=0,3
+gpus=2
+model=SimBERT-tiny
+pooler=cls
+epochs=epoch3
+batch_size=128
+path_train=/search/odin/guobk/data/simcse/20210621/train.npy
+config_path=/search/odin/guobk/data/model/chinese_simbert_L-4_H-312_A-12/bert_config.json
+save_dir=/search/odin/guobk/data/simcse/model_simple_l4
+nb_epochs=5
+mkdir $save_dir
+nohup python -u train2.py $gpus 0 $model $pooler allscene 0.3  $epochs $batch_size $path_train $config_path $save_dir $nb_epochs >> log/train1-simple-l4.log 2>&1 &
