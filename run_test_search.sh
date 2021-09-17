@@ -5,3 +5,12 @@ path_queries=/search/odin/guobk/data/bert_semantic/finetuneData_new_test/Queries
 path_target=/search/odin/guobk/data/bert_semantic/finetuneData_new_test/test-0623.json
 maxQ=200
 python -u test_search.py $models $path_models $path_docs $path_queries $path_target $maxQ >> log/simple-distill.log 2>&1 &
+
+export CUDA_VISIBLE_DEVICES="3"
+models=bert_cls_base,bert_cls_simple
+path_models=model/model_002.h5,model_simple/model_final.h5
+path_docs=/search/odin/guobk/data/bert_semantic/finetuneData_new_test/Docs.json
+path_queries=/search/odin/guobk/data/Tab3_test/Q-20210629.json
+path_target=/search/odin/guobk/data/Tab3_test/Q-20210629.json
+maxQ=200
+python -u test_search.py $models $path_models $path_docs $path_queries $path_target $maxQ >> log/test-0629.log 2>&1 &
